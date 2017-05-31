@@ -2,8 +2,9 @@
 
 |Travis|_ |AppVeyor|_ |Codecov|_ |CircleCI|_ |Python27|_ |Python35|_ |PyPi|_ |DOI|_
 
-.. |Travis| image:: https://api.travis-ci.org/scikit-learn/scikit-learn.svg?branch=master
-.. _Travis: https://travis-ci.org/scikit-learn/scikit-learn
+
+.. |Travis| image:: https://travis-ci.org/andela/boomslang-scikit-learn.svg?branch=master
+.. _Travis: https://travis-ci.org/andela/boomslang-scikit-learn
 
 .. |AppVeyor| image:: https://ci.appveyor.com/api/projects/status/github/scikit-learn/scikit-learn?branch=master&svg=true
 .. _AppVeyor: https://ci.appveyor.com/project/sklearn-ci/scikit-learn/history
@@ -168,3 +169,5 @@ Citation
 ~~~~~~~~
 
 If you use scikit-learn in a scientific publication, we would appreciate citations: http://scikit-learn.org/stable/about.html#citing-scikit-learn
+ 
+ 
