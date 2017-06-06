@@ -1027,7 +1027,7 @@ class MLPClassifier(BaseMultilayerPerceptron, ClassifierMixin):
         """
         y_prob = self.predict_proba(X)
         return np.log(y_prob, out=y_prob)
-
+    @property
     def predict_proba(self, X):
         """Probability estimates.
 
