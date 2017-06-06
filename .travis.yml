@@ -64,6 +64,7 @@ install: source build_tools/travis/install.sh
 script: bash build_tools/travis/test_script.sh
 after_success: source build_tools/travis/after_success.sh
 notifications:
+  slack: andela:G6s38o91RuZQsbgx72QvPPll
   webhooks:
     urls:
       - https://webhooks.gitter.im/e/4ffabb4df010b70cd624
