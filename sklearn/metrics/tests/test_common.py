@@ -369,11 +369,11 @@ NOT_SYMMETRIC_METRICS = [
 
 # No Sample weight support
 METRICS_WITHOUT_SAMPLE_WEIGHT = [
-    "confusion_matrix", # Left this one here because the tests in this file do
-                        # not work for confusion_matrix, as its output is a
-                        # matrix instead of a number. Testing of
-                        # confusion_matrix with sample_weight is in
-                        # test_classification.py
+    "confusion_matrix",  # Left this one here because the tests in this file do
+    # not work for confusion_matrix, as its output is a
+    # matrix instead of a number. Testing of
+    # confusion_matrix with sample_weight is in
+    # test_classification.py
     "median_absolute_error",
 ]
 
@@ -619,9 +619,9 @@ def test_invariance_string_vs_numbers_labels():
 
 
 def test_inf_nan_input():
-    invalids =[([0, 1], [np.inf, np.inf]),
-               ([0, 1], [np.nan, np.nan]),
-               ([0, 1], [np.nan, np.inf])]
+    invalids = [([0, 1], [np.inf, np.inf]),
+                ([0, 1], [np.nan, np.nan]),
+                ([0, 1], [np.nan, np.inf])]
 
     METRICS = dict()
     METRICS.update(THRESHOLDED_METRICS)
@@ -807,8 +807,8 @@ def test_normalize_option_multilabel_classification():
                                                n_samples=n_samples)
 
     # To make sure at least one empty label is present
-    y_true += [0]*n_classes
-    y_pred += [0]*n_classes
+    y_true += [0] * n_classes
+    y_pred += [0] * n_classes
 
     for name in METRICS_WITH_NORMALIZE_OPTION:
         metrics = ALL_METRICS[name]
@@ -1039,10 +1039,10 @@ def test_sample_weight_invariance(n_samples=50):
         metric = ALL_METRICS[name]
         if name in THRESHOLDED_METRICS:
             yield _named_check(check_sample_weight_invariance, name), name,\
-                  metric, y_true, y_score
+                metric, y_true, y_score
         else:
             yield _named_check(check_sample_weight_invariance, name), name,\
-                  metric, y_true, y_pred
+                metric, y_true, y_pred
 
     # multiclass
     random_state = check_random_state(0)
@@ -1058,10 +1058,10 @@ def test_sample_weight_invariance(n_samples=50):
         metric = ALL_METRICS[name]
         if name in THRESHOLDED_METRICS:
             yield _named_check(check_sample_weight_invariance, name), name,\
-                  metric, y_true, y_score
+                metric, y_true, y_score
         else:
             yield _named_check(check_sample_weight_invariance, name), name,\
-                  metric, y_true, y_pred
+                metric, y_true, y_pred
 
     # multilabel indicator
     _, ya = make_multilabel_classification(n_features=1, n_classes=20,
@@ -1110,3 +1110,101 @@ def test_no_averaging_labels():
             score_labels = metric(y_true, y_pred, labels=labels, average=None)
             score = metric(y_true, y_pred, average=None)
             assert_array_equal(score_labels, score[inverse_labels])
+
+
+def test_metric_permutation_invariance_multiclass():
+    rng = np.random.RandomState(42)
+    n_classes = 5
+    n_samples = 100
+    p_C = rng.rand(n_classes)
+    p_C /= p_C.sum()
+    cp_C = np.cumsum(p_C)
+    y_true = np.searchsorted(cp_C, rng.rand(n_samples))
+    y_pred = []
+    for y in y_true:
+        if rng.randint(0, 10) > 5:
+            y_pred_new = (y + 1) % n_classes
+        else:
+            y_pred_new = y
+        y_pred.append(y_pred_new)
+    classes_perm = rng.permutation(n_classes)
+    y_true_perm = classes_perm[y_true]
+    y_pred_perm = classes_perm[y_pred]
+    for name in CLASSIFICATION_METRICS:
+        if name in METRIC_UNDEFINED_BINARY_MULTICLASS:
+            continue
+        if name == "confusion_matrix":
+            continue
+        metric = ALL_METRICS[name]
+        score = metric(y_true, y_pred)
+        score_perm = metric(y_true_perm, y_pred_perm)
+        assert_almost_equal(score, score_perm)
+
+
+def test_metric_permutation_invariance_multilabel():
+    rng = np.random.RandomState(42)
+    n_samples = 100
+    n_classes = 5
+    p = 0.7
+    R = np.random.rand(n_samples, n_classes)
+    y_true = R > p
+    y_pred = R + np.random.randn(n_samples, n_classes) > p
+    classes_perm = rng.permutation(n_classes)
+    y_true_perm = y_true[:, classes_perm]
+    y_pred_perm = y_pred[:, classes_perm]
+
+    for name in MULTILABELS_METRICS:
+        metric = ALL_METRICS[name]
+        score = metric(y_true, y_pred)
+        score_perm = metric(y_true_perm, y_pred_perm)
+        assert_almost_equal(score, score_perm)
+
+
+def test_metric_permutation_invariance_thresholded_multiclass():
+    rng = np.random.RandomState(42)
+    y_score = rng.rand(100, 3)
+    y_score[:, 2] += .1
+    y_score[:, 1] -= .1
+    y_true = np.argmax(y_score, axis=1)
+    y_true[rng.randint(len(y_score), size=20)] = np.random.randint(
+        2, size=20)
+    for name in THRESHOLDED_METRICS:
+        if name in METRIC_UNDEFINED_BINARY_MULTICLASS:
+            continue
+        metric = ALL_METRICS[name]
+        same_score_under_permutation = None
+        for perm in [[0, 1, 2], [0, 2, 1], [1, 0, 2],
+                     [1, 2, 0], [2, 0, 1], [2, 1, 0]]:
+            inv_perm = np.zeros(3, dtype=int)
+            inv_perm[perm] = np.arange(3)
+            y_score_perm = y_score[:, inv_perm]
+            y_true_perm = np.take(perm, y_true)
+            score = metric(y_true_perm, y_score_perm)
+            if same_score_under_permutation is None:
+                same_score_under_permutation = score
+            else:
+                assert_almost_equal(score, same_score_under_permutation)
+
+
+def test_metric_permutation_invariance_thresholded_multilabel():
+    rng = np.random.RandomState(42)
+    n_samples = 100
+    n_classes = 5
+    p = 0.7
+    R = np.random.rand(n_samples, n_classes)
+    y_true = R > p
+    y_score = []
+    y_score_perm = []
+    classes_perm = rng.permutation(n_classes)
+    for i in range(len(y_true)):
+        while len(np.unique(y_true[i])) == 1:
+            y_true[i] = np.random.rand(n_classes) > p
+        y_score.append(y_true[i] + rng.normal(size=y_true[i].shape))
+        y_score_perm.append(y_score[i][classes_perm])
+
+    y_true_perm = y_true[:, classes_perm]
+    for name in THRESHOLDED_MULTILABEL_METRICS:
+        metric = ALL_METRICS[name]
+        score = metric(y_true, y_score)
+        score_perm = metric(y_true_perm, y_score_perm)
+        assert_almost_equal(score, score_perm)
